@@ -2,44 +2,67 @@
 Controller = require './framework/Controller.coffee'
 
 module.exports = class VideoController extends Controller
+  @joinOrLeaveVideo: (stanza) -> (messageType) -> \
+    stanza.is('message') \
+      and stanza.getChild('video', 'orgspan:video')?.attrs.type is messageType
 
-    @exposeEvents: ['videoJoin', 'videoLeave']
+  @exposeEvents: ['videoJoin', 'videoLeave']
 
-    @expose:
-        joinVideo: (jid) ->
-            @realtime.debug 'video', 'startVideoChat', jid
+  @expose:
+    joinVideo: (jid) ->
+      @realtime.debug 'video', 'startVideoChat', jid
 
-            type = (if jid.match(/@conference/) then 'groupchat' else 'chat')
-            stanza = new ltx.Element 'message', from:@realtime.jid.bare().toString(), to:jid, type:type
-            stanza.c 'video', xmlns:'orgspan:video', from:@realtime.jid.bare().toString(), type:'start'
+      type = (if jid.match(/@conference/) then 'groupchat' else 'chat')
+      stanza = new ltx.Element \
+        'message',
+        from:@realtime.jid.bare().toString(),
+        to:jid,
+        type:type
+  
+      stanza.c \
+        'video',
+        xmlns:'orgspan:video',
+        from:@realtime.jid.bare().toString(),
+        type:'start'
 
-            @realtime.debug 'video', 'sending join', stanza.toString()
-            @realtime.send stanza
+      @realtime.debug 'video', 'sending join', stanza.toString()
+      @realtime.send stanza
 
-        leaveVideo: (jid) ->
-            @realtime.debug 'video', 'leaveVideoChat', jid
+    leaveVideo: (jid) ->
+      @realtime.debug 'video', 'leaveVideoChat', jid
 
-            type = (if jid.match(/@conference/) then 'groupchat' else 'chat')
-            stanza = new ltx.Element 'message', from:@realtime.jid.bare().toString(), to:jid, type: type
-            stanza.c 'video', xmlns:'orgspan:video', from:@realtime.jid.bare().toString(), type:'leave'
+      type = (if jid.match(/@conference/) then 'groupchat' else 'chat')
+      stanza = new ltx.Element \
+        'message',
+        from:@realtime.jid.bare().toString(),
+        to:jid,
+        type: type
 
-            @realtime.debug 'video', 'sending leave', stanza.toString()
-            @realtime.send stanza
+      stanza.c \
+        'video',
+        xmlns:'orgspan:video',
+        from:@realtime.jid.bare().toString(),
+        type:'leave'
 
-    @stanzas:
-        joinVideo: (stanza) -> stanza.is('message') and stanza.getChild('video', 'orgspan:video')?.attrs.type is 'start'
-        leaveVideo: (stanza) -> stanza.is('message') and stanza.getChild('video', 'orgspan:video')?.attrs.type is 'leave'
+      @realtime.debug 'video', 'sending leave', stanza.toString()
+      @realtime.send stanza
 
-    joinVideo: (stanza) ->
-        room = new JID(stanza.attrs.from).bare().toString()
-        from = new JID(stanza.getChild('video', 'orgspan:video').attrs.from).bare().toString()
-        @realtime.debug 'video', 'video join', from
+  @stanzas:
+    joinVideo: (stanza) -> VideoController.joinOrLeaveVideo(stanza)('start')
+    leaveVideo: (stanza) -> VideoController.joinOrLeaveVideo(stanza)('leave')
 
-        @emit 'videoJoin', { from, room }
+  joinVideo: (stanza) ->
+    room = new JID(stanza.attrs.from).bare().toString()
+    from = new JID(stanza.getChild('video', 'orgspan:video').attrs.from)
+      .bare().toString()
+    @realtime.debug 'video', 'video join', from
 
-    leaveVideo: (stanza) ->
-        room = new JID(stanza.attrs.from).bare().toString()
-        from = new JID(stanza.getChild('video', 'orgspan:video').attrs.from).bare().toString()
-        @realtime.debug 'video', 'video leave', from
+    @emit 'videoJoin', { from, room }
 
-        @emit 'videoLeave', { from, room }
+  leaveVideo: (stanza) ->
+    room = new JID(stanza.attrs.from).bare().toString()
+    from = new JID(stanza.getChild('video', 'orgspan:video').attrs.from)
+      .bare().toString()
+    @realtime.debug 'video', 'video leave', from
+
+    @emit 'videoLeave', { from, room }
