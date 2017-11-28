@@ -2,7 +2,7 @@
 Controller = require './framework/Controller.coffee'
 
 module.exports = class VideoController extends Controller
-  @joinOrLeaveVideo: (stanza) -> (messageType) -> \
+  @joinOrLeaveVideo: (messageType) -> (stanza) -> \
     stanza.is('message') \
       and stanza.getChild('video', 'orgspan:video')?.attrs.type is messageType
 
@@ -48,8 +48,8 @@ module.exports = class VideoController extends Controller
       @realtime.send stanza
 
   @stanzas:
-    joinVideo: (stanza) -> VideoController.joinOrLeaveVideo(stanza)('start')
-    leaveVideo: (stanza) -> VideoController.joinOrLeaveVideo(stanza)('leave')
+    joinVideo: VideoController.joinOrLeaveVideo('start')
+    leaveVideo: VideoController.joinOrLeaveVideo('leave')
 
   joinVideo: (stanza) ->
     room = new JID(stanza.attrs.from).bare().toString()
