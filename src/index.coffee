@@ -14,24 +14,24 @@ global.uuid = require './lib/uuid'
 config = require(process.cwd() + "/config")
 
 global.logError = => @robot.logger.error arguments...
-global.log = => console.log arguments...
-global.debug = => # @robot.logger.info arguments...
+global.log = -> console.log arguments...
+global.debug = => @robot.logger.info arguments...
 
 class Realtime extends EventEmitter
 
-    constructor: (@client) ->
-    
-    send: (stanza) ->
-      debug 'stanza', 'out', stanza.toString()
-      @client.send stanza
-    
-    jid: null
-    
-    debug: debug
+  constructor: (@client) ->
+  
+  send: (stanza) ->
+    debug 'stanza', 'out', stanza.toString()
+    @client.send stanza
+  
+  jid: null
+  
+  debug: debug
 
-    connected: false
+  connected: false
 
-    features: {}
+  features: {}
 
 class PurecloudBot extends Adapter
 
@@ -44,7 +44,7 @@ class PurecloudBot extends Adapter
   run: ->
     options = config
 
-    @robot.on 'error', (error) => console.error error
+    @robot.on 'error', (error) -> console.error error
 
     @robot.logger.info util.inspect(options)
 
@@ -62,20 +62,29 @@ class PurecloudBot extends Adapter
 
     for fileName in fs.readdirSync __dirname + '/controllers'
       unless fileName.match /.*Controller(.coffee)?$/ then continue
-      name = _.str.camelize(fileName.substring(0, fileName.indexOf('Controller'))).replace /^./, (m) -> m.toLowerCase()
+      name = _.str.camelize(
+        fileName.substring(0, fileName.indexOf('Controller'))
+      ).replace /^./, (m) -> m.toLowerCase()
       Controller = require "./controllers/#{fileName}"
       @controllers[name] = new Controller(@realtime)
 
       do (name, Controller) =>
         for funcName, func of Controller.expose
-          debug 'handler', 'registering exposed controller method', funcName, 'in controller', name
+          debug 'handler', \
+            'registering exposed controller method',
+            funcName,
+            'in controller',
+            name
           do (funcName, func) =>
             @realtime[funcName] = (args...) =>
               apply = =>
                 func.apply @controllers[name], args
               unless @realtime.connected
-                debug 'handle', 'deferring call to', funcName, @realtime.connected
-                return @realtime.once 'connect', => 
+                debug 'handle', \
+                      'deferring call to',
+                      funcName,
+                      @realtime.connected
+                return @realtime.once 'connect', ->
                   debug 'handle', 'defer resolve', funcName
                   apply()
               else apply()
@@ -113,11 +122,11 @@ class PurecloudBot extends Adapter
 
     log 'jid is', @client.jid
 
-    @client.on 'error', (error) => logError error
+    @client.on 'error', (error) -> logError error
     
     @client.on 'online', @onConnect
     
-    @client.on 'offline', => 
+    @client.on 'offline', =>
       log 'offline', arguments...
       @realtime.emit 'disconnect'
     
@@ -129,7 +138,7 @@ class PurecloudBot extends Adapter
 
     @client
 
-  onConnect: ({jid}) => 
+  onConnect: ({jid}) =>
     log '***************** online', jid.toString(), jid.bare().toString()
     @realtime.jid = jid
     unless @realtime.connected
@@ -144,10 +153,12 @@ class PurecloudBot extends Adapter
 
     for name, controller of @controllers
       for func, test of controller.constructor.stanzas
-        do (stanza) =>
+        do (stanza) ->
           # stanza = stanza.clone()
           if test.apply(controller, [stanza])
-            debug 'stanza', 'handled by', "#{controller.constructor.name}.#{func}"
+            debug 'stanza', \
+                  'handled by',
+                  "#{controller.constructor.name}.#{func}"
             handled = true
             controller[func] stanza
 
@@ -160,7 +171,8 @@ class PurecloudBot extends Adapter
 
     for msg in messages
       unless msg then continue
-      @robot.logger.debug "Sending to #{envelope.room or envelope.user?.id}: #{msg}"
+      @robot.logger.debug "Sending to \
+        #{envelope.room or envelope.user?.id}: #{msg}"
 
       to = envelope.room or envelope.user?.id
 
@@ -188,7 +200,7 @@ class PurecloudBot extends Adapter
     if msg.type is 'person'
       user = @robot.brain.userForId msg.from
       user.room = msg.from
-    else 
+    else
       user = @robot.brain.userForId msg.to
       user.room = msg.to
 
