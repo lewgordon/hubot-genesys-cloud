@@ -1,5 +1,6 @@
 
 Controller = require './framework/Controller.coffee'
+{xml} = require '@xmpp/client';
 
 module.exports = class PresenceController extends Controller
 
@@ -20,7 +21,11 @@ module.exports = class PresenceController extends Controller
     unsubscribeFromPresence: (jids...) ->
       @realtime.debug 'presence', 'unsubscribeFromPresence', jids
       for jid in jids
-        @realtime.send new ltx.Element 'presence', from:@realtime.jid.toString(), to:jid, type:'unsubscribe'
+        stanza = xml(
+          'presence',
+          {type: 'unsubscribe', to: jid}
+        )
+        @realtime.send stanza
         delete @_presences[jid]
 
       return
@@ -82,8 +87,12 @@ module.exports = class PresenceController extends Controller
       @realtime.status = ''
       @realtime.location = ''
       
+      stanza = xml(
+        'presence',
+        {type: 'subscribe', to: @realtime.jid.bare().toString(), id: 'mepresence', from: @realtime.jid.toString()}
+      )
       # subscribe to self presence
-      @realtime.send new ltx.Element 'presence', id:'mepresence', from:@realtime.jid.toString(), to:@realtime.jid.bare().toString(), type:'subscribe'
+      @realtime.send stanza
       
       for jid in @extraSubscriptions
         @_requestSubscription jid
@@ -238,12 +247,17 @@ module.exports = class PresenceController extends Controller
       when 'idle' then 'xa'
       when 'busy' then 'dnd'
       else @realtime.presence
-    stanza = new ltx.Element 'presence', from:@realtime.jid.toString(), 'xml:lang':'en'
+
+    # stanza = new ltx.Element 'presence', from:@realtime.jid.toString(), 'xml:lang':'en'
 
     if presence is 'offline' then stanza.attrs.type = 'unavailable'
     else if presence isnt 'online' then stanza.c('show').t presence
+    stanza = xml(
+      'presence',
+      {'xml:lang': 'en', from: @realtime.jid.toString(), status: @realtime.status}
+    )
   
-    stanza.c('status').t(@realtime.status)
+    # stanza.c('status').t(@realtime.status)
 
     stanza.attrs.id = uuid.generate()
 

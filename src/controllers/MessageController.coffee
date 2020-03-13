@@ -1,5 +1,6 @@
 
 Controller = require './framework/Controller.coffee'
+{xml} = require '@xmpp/client';
 
 module.exports = class MessageController extends Controller
 
@@ -38,9 +39,14 @@ module.exports = class MessageController extends Controller
 			@_messages[to]?[id] = {id, from:@realtime.jid.bare().toString(), body:formatted, links, time:new Date(), raw:body}
 		
 			type = (if to.match(/@conference/) then 'groupchat' else 'chat')
-			stanza = new ltx.Element 'message', to:to, from:@realtime.jid, type:type, oid:id
-			stanza.c('body').t(body)
-			stanza.c('active', xmlns:'http://jabber.org/protocol/chatstates')
+			stanza = xml(
+				'message',
+				{type, to},
+				xml('body', {}, body)
+			)
+			# stanza = new ltx.Element 'message', to:to, from:@realtime.jid, type:type, oid:id
+			# stanza.c('body').t(body)
+			# stanza.c('active', xmlns:'http://jabber.org/protocol/chatstates')
 			
 			@_pending[id] = true
 			
@@ -144,16 +150,17 @@ module.exports = class MessageController extends Controller
 		@emit 'history:'+stanza.attrs.id, ret
 
 	handleMessage: (stanza) ->
-		@realtime.debug 'message', 'message', stanza.toString()
+		# @realtime.debug 'message', 'message', stanza.toString()
+		console.log("stanza: #{stanza}")
 		type = stanza.attrs.type
 		if type is 'chat'
-			from = new JID(stanza.attrs.from).bare().toString()
-			to = new JID(stanza.attrs.to).bare().toString()
+			from = JID(stanza.attrs.from).bare().toString()
+			to = JID(stanza.attrs.to).bare().toString()
 			key = from
 			key = if from is @realtime.jid.bare().toString() then to else from # carbons
 		else if type is 'groupchat'
-			from = new JID(stanza.attrs.ofrom).bare().toString()
-			to = new JID(stanza.attrs.from).bare().toString()
+			from = JID(stanza.attrs.ofrom).bare().toString()
+			to = JID(stanza.attrs.from).bare().toString()
 			key = to
 
 		messageType = stanza.getChild('type')?.text()
@@ -171,7 +178,7 @@ module.exports = class MessageController extends Controller
 
 		id = stanza.attrs.id
 
-		if @_messages[key]?[id] then return @realtime.debug 'message', 'double message', stanza.toString()
+		# if @_messages[key]?[id] then return @realtime.debug 'message', 'double message', stanza.toString()
 
 		# [CORE-1810] Setting ID to the OID if the message is from the current
 		#							participant. This prevents the message from being duplicated

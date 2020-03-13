@@ -1,6 +1,6 @@
 {
   "name": "hubot-purecloud",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Purecloud adapter for Hubot",
   "keywords": [
     "hubot",
@@ -18,9 +18,9 @@
   },
   "main": "./src/index",
   "dependencies": {
+    "@xmpp/client": "^0.11.1",
+    "@xmpp/jid": "^0.11.0",
     "coffeelint": "^2.0.7",
-    "node-xmpp-client": "3.0.0",
-    "node-xmpp-core": "3.0.0",
     "underscore": "^1.8.2",
     "underscore.string": "^3.0.3",
     "uuid": "2.0.2"
@@ -29,10 +29,11 @@
     "url": "https://github.com/rbrcurtis/hubot-purecloud/issues"
   },
   "devDependencies": {
-    "hubot": ">=2.4.1",
+    "@xmpp/debug": "^0.11.0",
     "coffee-script": "1.1.3",
-    "sinon": "1.9.0",
-    "mocha": "1.15.1"
+    "hubot": ">=2.4.1",
+    "mocha": "1.15.1",
+    "sinon": "1.9.0"
   },
   "engines": {
     "node": ">=0.10"
