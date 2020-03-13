@@ -1,5 +1,6 @@
 
 Controller = require './framework/Controller.coffee'
+{xml} = require '@xmpp/client';
 
 module.exports = class RosterController extends Controller
 
@@ -74,10 +75,15 @@ module.exports = class RosterController extends Controller
 
 	_sendRequest: ->
 		unless @realtime.connected then return @realtime.once 'connected', => @_sendRequest()
-		if @realtime.features['orgspan:roster'] and !@realtime.discovered then return
-		iq = new ltx.Element 'iq', type:'get', from:@realtime.jid.toString()
-		iq.c 'query', xmlns:'jabber:iq:roster'
-		@realtime.send iq
+		# if @realtime.features['orgspan:roster'] and !@realtime.discovered then return
+		# iq = xml(
+		#   'iq',
+		#   {type: 'get' from: @realtime.jid.toString()},
+		# #   {'query', {xmlns: 'jabber:iq:roster'}}
+		# )
+		# iq = new ltx.Element 'iq', type:'get', from:@realtime.jid.toString()
+		# iq.c 'query', xmlns:'jabber:iq:roster'
+		# @realtime.send iq
 
 
 

@@ -6,9 +6,10 @@ util = require 'util'
 
 global._ = require 'underscore'
 _.str = require 'underscore.string'
-XmppClient = require 'node-xmpp-client'
-global.JID = require('node-xmpp-core').JID
-global.ltx = XmppClient.ltx
+{client, jid} = require '@xmpp/client'
+debug = require('@xmpp/debug')
+XmppClient = client
+global.JID = jid
 global.uuid = require './lib/uuid'
 
 config = require(process.cwd() + "/config")
@@ -102,15 +103,15 @@ class PurecloudBot extends Adapter
   makeClient: ->
     options = @options
 
-    @client = new XmppClient
-      reconnect: true
-      jid: options.username
-      password: options.password
-      host: options.host
-      port: options.port
-      legacySSL: options.legacySSL
-      preferredSaslMechanism: options.preferredSaslMechanism
-      disallowTLS: options.disallowTLS
+    @client = XmppClient({
+      service: "xmpp://#{options.host}:#{options.port}",
+      resource: options.resource,
+      domain: options.domain,
+      username: options.username,
+      password: options.password,
+    })
+
+    debug(@client, true)
 
     @robot.logger.debug 'jid is', @client.jid
 
@@ -118,7 +119,7 @@ class PurecloudBot extends Adapter
 
     @connected = false
     
-    @client.connection.socket.setTimeout 0
+    # @client.connection.socket.setTimeout 0
 
     log 'jid is', @client.jid
 
@@ -134,13 +135,13 @@ class PurecloudBot extends Adapter
 
     @client.on 'end', =>
       @robot.logger.info 'Connection closed, attempting to reconnect'
-      @client.reconnect()
+      # @client.reconnect()
 
-    @client
+    @client.start()
 
   onConnect: ({jid}) =>
-    log '***************** online', jid.toString(), jid.bare().toString()
-    @realtime.jid = jid
+    log '***************** online', jid?.toString(), jid?.bare().toString()
+    @realtime.jid = JID("#{@client.username}@#{client.domain}/#{client.resource}")
     unless @realtime.connected
       @realtime.connected = true
       @emit 'connected'
@@ -178,6 +179,9 @@ class PurecloudBot extends Adapter
 
       @realtime.sendMessage to, msg
 
+  sendXml: (message) ->
+    xmpp.send(message)
+
   offline: =>
     @robot.logger.debug "Received offline event", @client.connect?
     @client.connect()
@@ -187,6 +191,7 @@ class PurecloudBot extends Adapter
 
   _onMessage: (msg) =>
     if msg.from is @options.username then return
+    if msg.from is "#{@options.username}@#{@options.domain}" then return
     if msg.body?.match /nsfw/ then return
 
     if msg.body?.match(/^hubot leave$/) and msg.to?.match(/@conference/)

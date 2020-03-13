@@ -27,6 +27,7 @@ module.exports = class RoomController extends Controller
     , 20
 
     leaveRoom: (roomJid) ->
+      return
       unless roomJid then return console?.error('leaveRoom called with no jid.')
       roomJid = roomJid.toString().split('@')[0]+'@conference.'+@realtime.jid.domain
       @realtime.debug 'room', 'joining', roomJid
@@ -36,6 +37,7 @@ module.exports = class RoomController extends Controller
       @realtime._clearMessages roomJid
 
     setRoomSubject: (roomJid, subject, callback = ->) ->
+      return
       roomJid = roomJid.toString().split('@')[0]+'@conference.'+@realtime.jid.domain
       stanza = new ltx.Element 'message', from:@realtime.jid.toString(), to:roomJid, type:'groupchat'
       stanza.c('subject').t(subject)
@@ -48,6 +50,7 @@ module.exports = class RoomController extends Controller
       ), 500
 
     getRoomInfo: (roomJid, callback) ->
+      return
       roomJid = roomJid.toString().split('@')[0]+'@conference.'+@realtime.jid.domain
 
       id = uuid.generate()
@@ -59,6 +62,7 @@ module.exports = class RoomController extends Controller
         return callback null, obj
 
     setAttributes: (roomJid, attributes) ->
+      return
       roomJid = roomJid.toString().split('@')[0]+'@conference.'+@realtime.jid.domain
 
       stanza = new ltx.Element 'message', to:roomJid, type:'groupchat'
@@ -176,6 +180,7 @@ module.exports = class RoomController extends Controller
           @_occupants[room] = @_pendingOccupants[room]
 
   _joinRoom: (roomJid) ->
+    return
     if @_rooms[roomJid] then return
     @_rooms[roomJid] = true
     stanza = new ltx.Element 'presence', from:@realtime.jid.toString(), to:"#{roomJid}/#{@_nick}", id:uuid.generate()
