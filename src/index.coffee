@@ -1,4 +1,9 @@
-{User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require 'hubot'
+try
+  {User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require 'hubot'
+catch
+  # FIXME: This is a hack for testing, otherwise instanceof doesn't work for TextMessage
+  path = require('path')
+  {User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require path.join(module.parent.path, '..')
 
 fs = require 'fs'
 util = require 'util'
@@ -19,7 +24,9 @@ global.debug = => # @robot.logger.info arguments...
 
 class Realtime extends EventEmitter
 
-    constructor: (@client) ->
+    constructor: (client) ->
+      super
+      @client = client
     
     send: (stanza) ->
       debug 'stanza', 'out', stanza.toString()
@@ -35,24 +42,32 @@ class Realtime extends EventEmitter
 
 class PurecloudBot extends Adapter
 
-  reconnectTryCount: 0
+  options = null
 
-  realtime: null
+  constructor: ->
+    super
+    @options = config
+
+    @client = new XmppClient
+      reconnect: true
+      jid: @options.username
+      password: @options.password
+      host: @options.host
+      port: @options.port
+      legacySSL: @options.legacySSL
+      preferredSaslMechanism: @options.preferredSaslMechanism
+      disallowTLS: @options.disallowTLS
+
+    @realtime = new Realtime @client
+
+  reconnectTryCount: 0
 
   controllers: {}
 
   run: ->
-    options = config
-
     @robot.on 'error', (error) => console.error error
 
-    @robot.logger.info util.inspect(options)
-
-    @options = options
-
     @makeClient()
-
-    @realtime = new Realtime @client
 
     @setupControllers()
 
@@ -91,21 +106,7 @@ class PurecloudBot extends Adapter
             null
 
   makeClient: ->
-    options = @options
-
-    @client = new XmppClient
-      reconnect: true
-      jid: options.username
-      password: options.password
-      host: options.host
-      port: options.port
-      legacySSL: options.legacySSL
-      preferredSaslMechanism: options.preferredSaslMechanism
-      disallowTLS: options.disallowTLS
-
     @robot.logger.debug 'jid is', @client.jid
-
-    @options = options
 
     @connected = false
     
@@ -126,8 +127,6 @@ class PurecloudBot extends Adapter
     @client.on 'end', =>
       @robot.logger.info 'Connection closed, attempting to reconnect'
       @client.reconnect()
-
-    @client
 
   onConnect: ({jid}) => 
     log '***************** online', jid.toString(), jid.bare().toString()
@@ -182,9 +181,6 @@ class PurecloudBot extends Adapter
         @realtime.leaveRoom msg.to
         @realtime.setInactive msg.to
 
-    #console.log 'message', 'got msg', msg, @options.username
-
-
     if msg.type is 'person'
       user = @robot.brain.userForId msg.from
       user.room = msg.from
@@ -192,9 +188,9 @@ class PurecloudBot extends Adapter
       user = @robot.brain.userForId msg.from
       user.room = msg.to
 
-    #console.log 'message', 'user', user
+    console.log 'message', 'msg', msg
     
-    @receive new TextMessage(user, msg.body)
+    @receive new TextMessage(user, msg.body, 'id')
 
 
 exports.use = (@robot) ->
