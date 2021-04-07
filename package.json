@@ -1,41 +1,36 @@
 {
   "name": "hubot-purecloud",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Purecloud adapter for Hubot",
   "keywords": [
     "hubot",
     "Purecloud",
     "adapter"
   ],
-  "licenses": [
-    {
-      "type": "MIT"
-    }
-  ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/tylerhammer/hubot-purecloud.git"
+    "url": "git://github.com/lewgordon/hubot-purecloud.git"
   },
   "main": "./src/index",
   "dependencies": {
-    "node-xmpp-client": "3.2.0",
-    "node-xmpp-core": "5.0.9",
+    "@xmpp/client": "^0.12.0",
+    "@xmpp/debug": "^0.12.0",
     "underscore": "^1.8.2",
     "underscore.string": "^3.0.3"
   },
-  "devDependencies": {
-    "hubot": "^2.13.2"
+  "peerDependencies": {
+    "hubot": ">= 3.0 < 4.0"
   },
   "bugs": {
-    "url": "https://github.com/tylerhammer/hubot-purecloud/issues"
+    "url": "https://github.com/lewgordon/hubot-purecloud/issues"
   },
-  "homepage": "https://github.com/tylerhammer/hubot-purecloud#readme",
-  "directories": {
-    "test": "test"
+  "engines": {
+    "node": ">=12.x"
   },
+  "homepage": "https://github.com/lewgordon/hubot-purecloud#readme",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "lew.gordon@genesys.com",
+  "license": "UNLICENSED"
 }

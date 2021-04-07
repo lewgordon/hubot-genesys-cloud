@@ -1,26 +1,31 @@
 try
-  {User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require 'hubot'
-catch
   # FIXME: This is a hack for testing, otherwise instanceof doesn't work for TextMessage
   path = require('path')
   {User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require path.join(module.parent.path, '..')
+catch
+  {User,Adapter,Robot,TextMessage,EnterMessage,LeaveMessage} = require 'hubot'
+
 
 fs = require 'fs'
 util = require 'util'
+path = require 'path'
 {EventEmitter} = require 'events'
 
 global._ = require 'underscore'
 _.str = require 'underscore.string'
-XmppClient = require 'node-xmpp-client'
-global.JID = require('node-xmpp-core').JID
-global.ltx = XmppClient.ltx
+{ client, xml } = require("@xmpp/client");
+middleware = require("@xmpp/middleware");
+debug = require("@xmpp/debug");
+
+global.JID = require('@xmpp/client').jid
+global.ltx = require('ltx')
 global.uuid = require './lib/uuid'
 
-config = require(process.cwd() + "/config")
+config = require(path.join(process.cwd(), 'config'))
 
 global.logError = => @robot.logger.error arguments...
 global.log = => console.log arguments...
-global.debug = => # @robot.logger.info arguments...
+global.debug = => console.log arguments... if process.env.HUBOT_GENESYS_CLOUD_DEBUG;
 
 class Realtime extends EventEmitter
 
@@ -48,15 +53,19 @@ class PurecloudBot extends Adapter
     super
     @options = config
 
-    @client = new XmppClient
-      reconnect: true
-      jid: @options.username
-      password: @options.password
-      host: @options.host
-      port: @options.port
-      legacySSL: @options.legacySSL
-      preferredSaslMechanism: @options.preferredSaslMechanism
-      disallowTLS: @options.disallowTLS
+    [username, domain] = @options.username.split('@')
+    @client = client({
+      service: "xmpp://#{@options.host}:#{@options.port}",
+      credentials: {
+        authzid: @options.username,
+        username,
+        password: @options.password,
+      },
+      # This requires NODE_TLS_REJECT_UNAUTHORIZED=0
+      domain,
+    });
+
+    debug(@client, true) if process.env.HUBOT_GENESYS_CLOUD_DEBUG
 
     @realtime = new Realtime @client
 
@@ -106,14 +115,8 @@ class PurecloudBot extends Adapter
             null
 
   makeClient: ->
-    @robot.logger.debug 'jid is', @client.jid
-
     @connected = false
     
-    @client.connection.socket.setTimeout 0
-
-    log 'jid is', @client.jid
-
     @client.on 'error', (error) => logError error
     
     @client.on 'online', @onConnect
@@ -128,23 +131,23 @@ class PurecloudBot extends Adapter
       @robot.logger.info 'Connection closed, attempting to reconnect'
       @client.reconnect()
 
-  onConnect: ({jid}) => 
-    log '***************** online', jid.toString(), jid.bare().toString()
-    @realtime.jid = jid
+    if(@client.start)
+      @client.start().catch(console.error);
+
+  onConnect: () => 
+    log '***************** online', @client.jid.toString(), @client.jid.bare().toString()
+    @realtime.jid = @client.jid
     unless @realtime.connected
       @realtime.connected = true
       @emit 'connected'
     @realtime.emit 'connect'
 
   onStanza: (stanza) =>
-    debug 'stanza', 'in', stanza.toString()
-
     handled = false
 
     for name, controller of @controllers
       for func, test of controller.constructor.stanzas
         do (stanza) =>
-          # stanza = stanza.clone()
           if test.apply(controller, [stanza])
             debug 'stanza', 'handled by', "#{controller.constructor.name}.#{func}"
             handled = true
@@ -154,16 +157,21 @@ class PurecloudBot extends Adapter
 
     null
 
-  send: (envelope, messages...) ->
-    #log 'robot', 'send', arguments...
-
-    for msg in messages
-      unless msg then continue
-      @robot.logger.debug "Sending to #{envelope.room or envelope.user?.id}: #{msg}"
+  _send: (envelope, messages, fn) ->
+    for message in messages
+      unless message then continue
+      transformedMessage = fn(message)
+      @robot.logger.debug "Sending to #{envelope.room or envelope.user?.id}: #{transformedMessage}"
 
       to = envelope.room or envelope.user?.id
 
-      @realtime.sendMessage to, msg
+      @realtime.sendMessage to, transformedMessage
+
+  send: (envelope, messages...) ->
+    @_send(envelope, messages, (msg) => msg)
+
+  emote: (envelope, messages...) ->
+    @_send(envelope, messages, (msg) => "/me #{msg}")
 
   offline: =>
     @robot.logger.debug "Received offline event", @client.connect?
@@ -188,9 +196,7 @@ class PurecloudBot extends Adapter
       user = @robot.brain.userForId msg.from
       user.room = msg.to
 
-    console.log 'message', 'msg', msg
-    
-    @receive new TextMessage(user, msg.body, 'id')
+    @receive new TextMessage(user, msg.body)
 
 
 exports.use = (@robot) ->
