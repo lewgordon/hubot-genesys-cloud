@@ -45,7 +45,7 @@ class Realtime extends EventEmitter
 
     features: {}
 
-class PurecloudBot extends Adapter
+class GenesysCloudBot extends Adapter
 
   options = null
 
@@ -215,4 +215,4 @@ class PurecloudBot extends Adapter
 
 
 exports.use = (@robot) ->
-  new PurecloudBot @robot
+  new GenesysCloudBot @robot

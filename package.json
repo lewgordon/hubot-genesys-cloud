@@ -1,15 +1,19 @@
 {
-  "name": "hubot-purecloud",
+  "name": "hubot-genesys-cloud",
   "version": "0.3.0",
-  "description": "Purecloud adapter for Hubot",
+  "description": "Genesys Cloud adapter for Hubot",
   "keywords": [
     "hubot",
-    "Purecloud",
-    "adapter"
+    "Genesys",
+    "adapter",
+    "Genesys Cloud"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "repository": {
     "type": "git",
-    "url": "git@github.com:lewgordon/hubot-purecloud.git"
+    "url": "git@github.com:lewgordon/hubot-genesys-cloud.git"
   },
   "main": "./src/index",
   "dependencies": {
@@ -22,12 +26,12 @@
     "hubot": ">= 3.0 < 4.0"
   },
   "bugs": {
-    "url": "https://github.com/lewgordon/hubot-purecloud/issues"
+    "url": "https://github.com/lewgordon/hubot-genesys-cloud/issues"
   },
   "engines": {
     "node": ">=12.x"
   },
-  "homepage": "https://github.com/lewgordon/hubot-purecloud#readme",
+  "homepage": "https://github.com/lewgordon/hubot-genesys-cloud#readme",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
