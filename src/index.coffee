@@ -199,6 +199,8 @@ class GenesysCloudBot extends Adapter
       @realtime.sendMessage to, 'Goodbye!', =>
         @realtime.leaveRoom to
         @realtime.setInactive to
+    else
+      @realtime.sendMessage res.envelope.user?.id, "Sorry, I can only leave chats!"
 
   _onMessage: (msg) =>
     if msg.from is @options.username then return
