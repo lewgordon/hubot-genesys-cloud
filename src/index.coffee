@@ -192,14 +192,17 @@ class PurecloudBot extends Adapter
     @robot.logger.debug "Received offline event"
     @client.connect()
 
+  leaveRoom: (res) =>
+    to = res.envelope.room
+    @robot.logger.debug 'Leaving room', to
+    if to.match(/@conference/)
+      @realtime.sendMessage to, 'Goodbye!', =>
+        @realtime.leaveRoom to
+        @realtime.setInactive to
+
   _onMessage: (msg) =>
     if msg.from is @options.username then return
     if msg.body?.match /nsfw/ then return
-
-    if msg.body?.match(/^hubot leave$/) and msg.to?.match(/@conference/)
-      @realtime.sendMessage msg.to, 'Goodbye!', =>
-        @realtime.leaveRoom msg.to
-        @realtime.setInactive msg.to
 
     if msg.type is 'person'
       user = @robot.brain.userForId msg.from
