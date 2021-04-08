@@ -157,21 +157,33 @@ class PurecloudBot extends Adapter
 
     null
 
-  _send: (envelope, messages, fn) ->
+  _send: (envelope, messages, {message_fn, preferred_to_fn}) ->
     for message in messages
       unless message then continue
-      transformedMessage = fn(message)
+      if (!message_fn)
+        message_fn = (msg) => msg
+      transformedMessage = message_fn(message)
       @robot.logger.debug "Sending to #{envelope.room or envelope.user?.id}: #{transformedMessage}"
 
-      to = envelope.room or envelope.user?.id
+      if (!preferred_to_fn)
+        to = envelope.room or envelope.user?.id
+      else
+        to = preferred_to_fn(envelope)
 
       @realtime.sendMessage to, transformedMessage
 
   send: (envelope, messages...) ->
-    @_send(envelope, messages, (msg) => msg)
+    @_send(envelope, messages, {})
 
   emote: (envelope, messages...) ->
-    @_send(envelope, messages, (msg) => "/me #{msg}")
+    @_send(envelope, messages, {
+      message_fn: ((msg) => "/me #{msg}")
+    })
+
+  reply: (envelope, messages...) ->
+    @_send(envelope, messages, {
+      preferred_to_fn: ((envelope) => envelope.user?.id)
+    })
 
   offline: =>
     @robot.logger.debug "Received offline event", @client.connect?
