@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/lewgordon/hubot-purecloud.git"
+    "url": "git@github.com:lewgordon/hubot-purecloud.git"
   },
   "main": "./src/index",
   "dependencies": {
