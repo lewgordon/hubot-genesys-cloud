@@ -53,7 +53,7 @@ class GenesysCloudBot extends Adapter
     super
     @options = config
 
-    [username, domain] = @options.username.split('@')
+    [username, _] = @options.username.split('@')
     @client = client({
       service: "xmpp://#{@options.host}:#{@options.port}",
       credentials: {
@@ -61,9 +61,16 @@ class GenesysCloudBot extends Adapter
         username,
         password: @options.password,
       },
-      # This requires NODE_TLS_REJECT_UNAUTHORIZED=0
-      domain,
     });
+    # !!! HACK BELOW !!! All of thie is because it's
+    # near impossible to override the host when the
+    # connection is upgraded to TLS.
+    @client.header = (args...) =>
+      for el in args
+        if el.attrs.to == @options.host
+          el.attrs.to = domain
+      # This comes from @xmpp/client-core
+      @client.Transport.prototype.header(args...)
 
     debug(@client, true) if process.env.HUBOT_GENESYS_CLOUD_DEBUG
 
