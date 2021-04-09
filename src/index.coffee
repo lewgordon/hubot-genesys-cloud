@@ -53,7 +53,7 @@ class GenesysCloudBot extends Adapter
     super
     @options = config
 
-    [username, _] = @options.username.split('@')
+    [username, domain] = @options.username.split('@')
     @client = client({
       service: "xmpp://#{@options.host}:#{@options.port}",
       credentials: {
