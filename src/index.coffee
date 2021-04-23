@@ -210,7 +210,7 @@ class GenesysCloudBot extends Adapter
       @realtime.sendMessage res.envelope.user?.id, "Sorry, I can only leave chats!"
 
   _onMessage: (msg) =>
-    if msg.from is @options.username then return
+    if msg.from is @options.username.toLowerCase() then return
     if msg.body?.match /nsfw/ then return
 
     if msg.type is 'person'
